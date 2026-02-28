@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Tic Tac Toe — Mobile Optimized (Smaller Controls)</title>
+  <style>
+    :root{
+      --bg1:#071029; --bg2:#0b2540;
+      --card:rgba(255,255,255,0.04);
+      --accent:#ffb86b; --accent-2:#ff6b6b;
+      --muted:#e6eef8;
+      --cell-bg:rgba(255,255,255,0.03);
+      --cell-border:rgba(255,255,255,0.08);
+      --win-glow:#4caf50;
+      --glass: rgba(255,255,255,0.03);
+      --ui-radius:14px;
+      --safe-bottom: env(safe-area-inset-bottom, 12px);
+    }
+    [data-theme="light"]{
+      --bg1:#f3f6fb; --bg2:#e9eef8; --card:rgba(0,0,0,0.03);
+      --accent:#ff7a18; --accent-2:#e91e63; --muted:#1f2937;
+      --cell-bg:#ffffff; --cell-border:rgba(0,0,0,0.06);
+      --win-glow:#2e7d32; --glass: rgba(0,0,0,0.03);
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px;
+      box-sizing:border-box;
+    }
+
+    .container {
+      width:100%;
+      max-width:460px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      padding-bottom: calc(var(--safe-bottom) + 8px);
+    }
+
+    .card {
+      width:100%;
+      background:var(--card);
+      border-radius:16px;
+      padding:12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      backdrop-filter: blur(8px);
+      box-sizing:border-box;
+    }
+
+    .header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .title { font-size:18px; margin:0; color:var(--muted); font-weight:700; }
+    .mode-badge {
+      padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px;
+      color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    }
+
+    .board-wrap { width:100%; display:flex; justify-content:center; }
+    .board {
+      width: min(86vw, 360px);
+      height: min(86vw, 360px);
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap:10px;
+      padding:8px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.25);
+      touch-action: manipulation;
+    }
+
+    .cell {
+      background:var(--cell-bg);
+      border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size: clamp(28px, 9vw, 56px);
+      font-weight:800; color:var(--muted);
+      cursor:pointer; user-select:none;
+      transition: transform .12s ease, background .18s ease, box-shadow .18s ease;
+      border: 2px solid var(--cell-border);
+      -webkit-tap-highlight-color: transparent;
+      width:100%; height:100%;
+    }
+    .cell:active { transform: translateY(2px) scale(0.99); }
+    .cell.taken { cursor:default; opacity:0.95; }
+    .cell.win {
+      animation: winPulse 900ms infinite alternate;
+      background: linear-gradient(90deg,var(--win-glow), #9be7a6) !important;
+      color:#fff !important;
+      box-shadow: 0 0 30px rgba(76,175,80,0.35);
+    }
+    @keyframes winPulse { from { box-shadow: 0 0 10px rgba(76,175,80,0.25);} to { box-shadow: 0 0 30px rgba(76,175,80,0.45);} }
+
+    /* Bottom control bar: smaller buttons */
+    .bottom-bar {
+      position:fixed;
+      left:12px;
+      right:12px;
+      bottom: calc(var(--safe-bottom) + 8px);
+      display:flex;
+      gap:4px;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px;
+      background:var(--card);
+      border-radius:12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      z-index:999;
+    }
+
+    .control-btn {
+      flex:1;
+      padding:8px 4px;
+      border-radius:10px;
+      border:none;
+      font-weight:700;
+      font-size:11px;
+      color:#fff;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+      min-width:0;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      justify-content:center;
+      gap:2px;
+    }
+    .control-btn.ghost {
+      background:transparent;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,0.06);
+      box-shadow:none;
+    }
+    .control-btn.danger {
+      background: linear-gradient(90deg, #ff4b2b, #ff416c);
+    }
+
+    .btn-icon {
+      width:18px; height:18px; display:inline-block; border-radius:4px; 
+      display:inline-flex; align-items:center; justify-content:center; font-size:12px;
+    }
+
+    .info-row { width:100%; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; }
+    .turn { display:flex; gap:8px; align-items:center; }
+    .dot { width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 6px 18px rgba(255,120,40,0.18); }
+    .turn strong { font-size:15px; color:var(--muted); font-weight:700; }
+
+    .score { background:var(--glass); padding:6px 10px; border-radius:10px; font-weight:700; font-size:14px; }
+
+    .options { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+    select { padding:8px 10px; border-radius:8px; border:none; background:rgba(0,0,0,0.12); color:var(--muted); font-weight:600; font-size:14px; }
+
+    .history { width:100%; max-height:140px; overflow:auto; padding:8px; border-radius:8px; background:var(--glass); margin-top:8px; font-size:13px; }
+    .history .item { padding:6px 8px; border-radius:6px; margin-bottom:6px; background:rgba(0,0,0,0.06); display:flex; justify-content:space-between; color:var(--muted); }
+
+    @media (max-width:420px){
+      .control-btn { font-size:10px; }
+      .btn-icon { width:16px; height:16px; font-size:11px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app" data-theme="dark">
+    <div class="card" style="width:100%;">
+      <div class="header">
+        <div style="display:flex;flex-direction:column;">
+          <div class="title">Tic Tac Toe</div>
+          <div style="font-size:12px;opacity:0.85;margin-top:4px;">Tap a cell to play • Large touch targets</div>
+        </div>
+        <div class="mode-badge" id="modeBadge">Player vs Computer</div>
+      </div>
+
+      <div class="board-wrap" style="margin-top:12px;">
+        <div class="board" id="board" role="grid" aria-label="Tic Tac Toe board"></div>
+      </div>
+
+      <div class="info-row" style="margin-top:10px;">
+        <div class="turn">
+          <div class="dot" id="turnDot"></div>
+          <div>
+            <div style="font-size:12px;opacity:0.9">Current</div>
+            <strong id="turnLabel">Player X</strong>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="score">X: <span id="scoreX">0</span></div>
+          <div class="score">O: <span id="scoreO">0</span></div>
+        </div>
+      </div>
+
+      <div class="options" style="margin-top:10px; justify-content:center;">
+        <select id="modeSelect" aria-label="Game mode">
+          <option value="ai">Player vs Computer</option>
+          <option value="pvp">Player vs Player</option>
+        </select>
+        <select id="difficulty" aria-label="Difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <select id="timerSelect" aria-label="Timer">
+          <option value="0">Timer Off</option>
+          <option value="5">5s</option>
+          <option value="10" selected>10s</option>
+        </select>
+      </div>
+
+      <div class="history" id="history" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="bottom-bar" role="toolbar" aria-label="Game controls">
+      <button class="control-btn ghost" id="undoBtn">
+        <span class="btn-icon">↶</span>
+        <span>Undo</span>
+      </button>
+
+      <button class="control-btn" id="restartBtn">
+        <span class="btn-icon">⟳</span>
+        <span>Restart</span>
+      </button>
+
+      <button class="control-btn ghost" id="hintBtn">
+        <span class="btn-icon">💡</span>
+        <span>Hint</span>
+      </button>
+
+      <button class="control-btn danger" id="resetScoreBtn">
+        <span class="btn-icon">🗑</span>
+        <span>Score</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const modeBadge = document.getElementById('modeBadge');
+    const modeSelect = document.getElementById('modeSelect');
+    const difficultySelect = document.getElementById('difficulty');
+    const timerSelect = document.getElementById('timerSelect');
+    const turnLabel = document.getElementById('turnLabel');
+    const turnDot = document.getElementById('turnDot');
+    const scoreXEl = document.getElementById('scoreX');
+    const scoreOEl = document.getElementById('scoreO');
+    const historyEl = document.getElementById('history');
+
+    const restartBtn = document.getElementById('restartBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    const resetScoreBtn = document.getElementById('resetScoreBtn');
+
+    let cells = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let scores = { X:0, O:0 };
+    let moveStack = [];
+    let historyList = [];
+    let timer = null;
+    let timeLeft = 0;
+
+    function renderBoard(){
+      boardEl.innerHTML = '';
+      for(let i=0;i<9;i++){
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (cells[i] ? ' taken' : '');
+        cell.dataset.index = i;
+        cell.setAttribute('role','button');
+        cell.setAttribute('aria-label', `Cell ${i+1}`);
+        cell.innerText = cells[i] || '';
+        cell.addEventListener('click', onCellClick, {passive:true});
+        boardEl.appendChild(cell);
+      }
+    }
+
+    function updateUI(){
+      turnLabel.innerText = gameActive ? `Player ${currentPlayer}` : 'Game Over';
+      turnDot.style.background = currentPlayer === 'X' ? 'var(--accent)' : 'var(--accent-2)';
+      scoreXEl.innerText = scores.X;
+      scoreOEl.innerText = scores.O;
+      modeBadge.innerText = modeSelect.value === 'ai' ? 'Player vs Computer' : 'Player vs Player';
+    }
+
+    const winningCombos = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    function checkWinFor(player){
+      for(const combo of winningCombos){
+        if(combo.every(i => cells[i] === player)) return combo;
+      }
+      return null;
+    }
+
+    function checkWin(){
+      const combo = checkWinFor(currentPlayer);
+      if(combo){
+        combo.forEach(i => boardEl.children[i].classList.add('win'));
+        gameActive = false;
+        scores[currentPlayer]++;
+        addHistory(`Player ${currentPlayer} wins`);
+        updateUI();
+        return true;
+      }
+      if(cells.every(c => c !== '')){
+        gameActive = false;
+        addHistory('Draw');
+        updateUI();
+        return false;
+      }
+      return false;
+    }
+
+    function addHistory(text){
+      const time = new Date().toLocaleTimeString();
+      historyList.unshift({text, time});
+      if(historyList.length>30) historyList.pop();
+      renderHistory();
+    }
+    function renderHistory(){
+      historyEl.innerHTML = '';
+      historyList.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<div>${h.text}</div><div style="opacity:0.8;font-size:12px">${h.time}</div>`;
+        historyEl.appendChild(div);
+      });
+    }
+
+    function onCellClick(e){
+      const idx = Number(e.currentTarget.dataset.index);
+      if(!gameActive || cells[idx]) return;
+      makeMove(idx, currentPlayer);
+      if(!checkWin()){
+        switchPlayer();
+        if(modeSelect.value === 'ai' && currentPlayer === 'O' && gameActive){
+          setTimeout(aiTurn, 420);
+        }
+      }
+    }
+
+    function makeMove(idx, player){
+      cells[idx] = player;
+      moveStack.push({index:idx, player, time: new Date()});
+      renderBoard();
+      updateUI();
+      addHistory(`Move: ${player} -> R${Math.floor(idx/3)+1}C${(idx%3)+1}`);
+      resetTimer();
+    }
+
+    function undoMove(){
+      if(moveStack.length === 0 || !gameActive) return;
+      const last = moveStack.pop();
+      cells[last.index] = '';
+      if(modeSelect.value === 'ai' && last.player === 'O' && moveStack.length){
+        const prev = moveStack.pop();
+        cells[prev.index] = '';
+      }
+      currentPlayer = 'X';
+      renderBoard();
+      updateUI();
+      addHistory('Undo performed');
+      resetTimer();
+    }
+
+    function coordFromIndex(i){
+      const r = Math.floor(i/3)+1, c = (i%3)+1;
+      return `R${r}C${c}`;
+    }
+
+    function switchPlayer(){
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      updateUI();
+      startTimerIfNeeded();
+    }
+
+    function startTimerIfNeeded(){
+      clearInterval(timer);
+      const t = Number(timerSelect.value);
+      if(t <= 0) { timeLeft = 0; updateUI(); return; }
+      timeLeft = t;
+      timer = setInterval(()=>{
+        timeLeft--;
+        if(timeLeft <= 0){
+          clearInterval(timer);
+          addHistory(`Time out: Player ${currentPlayer} skipped`);
+          switchPlayer();
+          if(modeSelect.value === 'ai' && currentPlayer === 'O' && gameActive){
+            setTimeout(aiTurn, 350);
+          }
+        }
+      }, 1000);
+    }
+    function resetTimer(){ clearInterval(timer); startTimerIfNeeded(); }
+
+    function aiTurn(){
+      if(!gameActive) return;
+      const difficulty = difficultySelect.value;
+      let move;
+      if(difficulty === 'easy') move = randomMove();
+      else if(difficulty === 'medium') move = Math.random() < 0.6 ? bestMove('O') : randomMove();
+      else move = bestMove('O');
+      if(move === null || move === undefined) move = randomMove();
+      makeMove(move, 'O');
+      if(!checkWin()) switchPlayer();
+    }
+
+    function randomMove(){
+      const avail = cells.map((v,i)=> v===''?i:null).filter(v=>v!==null);
+      if(avail.length===0) return null;
+      return avail[Math.floor(Math.random()*avail.length)];
+    }
+
+    function bestMove(player){
+      if(cells.every(c=>c==='')) return 4;
+      function minimax(boardState, depth, isMaximizing){
+        const winX = checkStaticWin(boardState, 'X');
+        const winO = checkStaticWin(boardState, 'O');
+        if(winX) return {score: -10 + depth};
+        if(winO) return {score: 10 - depth};
+        if(boardState.every(c=>c!=='')) return {score: 0};
+        const avail = boardState.map((v,i)=> v===''?i:null).filter(v=>v!==null);
+        let best;
+        if(isMaximizing){
+          best = {score:-Infinity, index:null};
+          for(const idx of avail){
+            boardState[idx] = 'O';
+            const res = minimax(boardState, depth+1, false);
+            boardState[idx] = '';
+            if(res.score > best.score) best = {score: res.score, index: idx};
+          }
+        } else {
+          best = {score:Infinity, index:null};
+          for(const idx of avail){
+            boardState[idx] = 'X';
+            const res = minimax(boardState, depth+1, true);
+            boardState[idx] = '';
+            if(res.score < best.score) best = {score: res.score, index: idx};
+          }
+        }
+        return best;
+      }
+      const boardCopy = cells.slice();
+      const result = minimax(boardCopy, 0, player === 'O');
+      return result.index;
+    }
+    function checkStaticWin(boardState, player){
+      return winningCombos.some(combo => combo.every(i => boardState[i] === player));
+    }
+
+    function showHint(){
+      if(!gameActive) return;
+      let move = bestMove(currentPlayer === 'X' ? 'X' : 'O');
+      if(move === null || move === undefined) move = randomMove();
+      if(move === null) return;
+      const el = boardEl.children[move];
+      el.style.transition = 'box-shadow .18s ease, transform .18s ease';
+      const prev = el.style.boxShadow;
+      el.style.boxShadow = '0 0 18px rgba(255,255,255,0.9)';
+      el.style.transform = 'scale(1.06)';
+      setTimeout(()=>{ el.style.boxShadow = prev; el.style.transform = ''; }, 900);
+      addHistory(`Hint: ${coordFromIndex(move)}`);
+    }
+
+    restartBtn.addEventListener('click', ()=>{ cells = Array(9).fill(''); moveStack=[]; gameActive=true; currentPlayer='X'; renderBoard(); updateUI(); resetTimer(); addHistory('Round restarted'); });
+    undoBtn.addEventListener('click', undoMove);
+    hintBtn.addEventListener('click', showHint);
+    resetScoreBtn.addEventListener('click', () => { scores = {X:0, O:0}; updateUI(); addHistory('Scores reset'); });
+    modeSelect.addEventListener('change', ()=>{ cells = Array(9).fill(''); moveStack=[]; gameActive=true; currentPlayer='X'; renderBoard(); updateUI(); addHistory('Mode changed'); });
+    difficultySelect.addEventListener('change', ()=>{ addHistory(`Difficulty: ${difficultySelect.value}`); });
+    timerSelect.addEventListener('change', ()=>{ resetTimer(); addHistory(`Timer: ${timerSelect.value}s`); });
+
+    // Init
+    renderBoard();
+    updateUI();
+    renderHistory();
+    if(Number(timerSelect.value) > 0) startTimerIfNeeded();
+    window.addEventListener('load', ()=>{ renderBoard(); updateUI(); });
+  </script>
+</body>
+</html>
+
+
